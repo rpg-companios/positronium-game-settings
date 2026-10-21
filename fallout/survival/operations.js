@@ -1,0 +1,216 @@
+// Операции выживания — модуль сеттинга Fallout.
+//
+// sleepSurvival применяет сон (docs/survival-system-design.md §4–§7):
+// лестницы + усталость (чистый домен rest; текущие ОЗ сон не трогает —
+// усталость снижает максимум, патч 213), мост контуров — временные
+// эффекты продвигаются на N × 12 сцен (родовая операция контекста
+// advanceEffectsByGameHours), и при сне в пустоши — проверка болезни по
+// имеющейся механике (событие sleepOnGround, родовая операция
+// resolveSceneRiskEventById). Прогноз для модали делает чистый домен
+// forecastSleep (состояние не фиксируется) — эта функция фиксирует.
+//
+// Зависимости приходят объектом контекста (useCharacter()): модуль не
+// импортирует React и не знает, где живёт состояние.
+
+import useCharacterStore from '../../../src/store/characterStore';
+import useAppSettingsStore from '../../../src/store/appSettingsStore';
+import { debugLog } from '../debug.js';
+import { advanceHours, consumeDrink, consumeFood, fatigueHpLossFromEvents, rest, wait } from './survival';
+// 406: перки выживания — верблюд (доп. ступень), омолодившийся (скорость
+// лестниц), естественная стойкость (сон в пустоши без болезни).
+const survivalPerkOptions = (item = null) => {
+  const perkBonuses = useCharacterStore.getState().perkBonuses || {};
+  let extraWaterSteps = Math.max(0, Number(perkBonuses.dromedaryExtraWaterStep) || 0);
+  // 409: «Кровосос» — пакет крови и так напиток, по книге он дополнительно
+  // поднимает Жажду на ступень (сверка с notepad: '+1 ступень при пакете').
+  if (item && Array.isArray(perkBonuses.bloodPackDrinkIds)
+    && perkBonuses.bloodPackDrinkIds.includes(item.id)) {
+    extraWaterSteps += 1;
+  }
+  return {
+    extraWaterSteps,
+    ladderAccRates: perkBonuses.ladderAccRates || null,
+    sleepOnGroundDiseaseImmune: Boolean(perkBonuses.sleepOnGroundDiseaseImmune),
+  };
+};
+
+// Хранилище выживания — слайс stateExtensions стора (патч 209). Операции
+// читают СВЕЖЕЕ состояние прямо из стора (не из замыканий рендеров), а
+// пишут — действиями того же стора (setStateExtension; Шаг 8а, патч 240:
+// и болезни/эффекты тоже в сторе — React-контекст не нужен). Так
+// «поесть/попить/поспать» из любого места работают на одних данных —
+// в точности как items/effects.
+const currentSurvival = () =>
+  useCharacterStore.getState().stateExtensions?.survival ?? null;
+
+// Гейт настройкой (этап 5, патч 210): выключенное выживание заморожено —
+// шкалы не двигаются, трекинг не идёт; состояние в сейве сохраняется.
+const survivalEnabled = () =>
+  useAppSettingsStore.getState().getSettingValue('survivalModeEnabled') === true;
+
+/**
+ * Слушатель применённых расходников (реестр stateExtensions, патч 208).
+ * Движок зовёт его в конце applyConsumableFull — то есть при употреблении
+ * еды/напитков ЛЮБЫМ путём (инвентарь или модалка выживания) шкалы
+ * выживания двигаются одинаково. Возвращает null, если предмет —
+ * не еда/напиток, у персонажа нет выживания (робот/киборг) или система
+ * выключена настройкой (заморожено).
+ */
+export const survivalConsumableListener = (item, ctx) => {
+  if (!survivalEnabled()) return null;
+  const survival = currentSurvival();
+  if (!survival) return null;
+
+  const apply = (result) => {
+    if (!result.ok) return { ok: false, reason: result.reason };
+    ctx.setStateExtension('survival', result.state);
+    return { ok: true, gained: result.gained };
+  };
+
+  if (item?.itemType === 'food') {
+    return apply(consumeFood(survival, item));
+  }
+  if (item?.itemType === 'drinks') {
+    return apply(consumeDrink(survival, item, {
+      extraWaterSteps: survivalPerkOptions(item).extraWaterSteps,
+    }));
+  }
+  return null;
+};
+
+export const sleepSurvival = ({ place, hours }) => {
+  if (!survivalEnabled()) return { ok: false, reason: 'disabled' };
+
+  // Шаг 8а (патч 240): все зависимости — стор (React-контекст не нужен).
+  const store = useCharacterStore.getState();
+  const {
+    setStateExtension,
+    reducePersistentDiseaseRanks,
+    advanceEffectsByGameHours,
+  } = store;
+
+  const survival = currentSurvival();
+  if (!survival) return { ok: false, reason: 'notCapable' };
+
+  // 406: перки выживания — до первого использования (rest и проверка болезни).
+  const { sleepOnGroundDiseaseImmune, ladderAccRates } = survivalPerkOptions();
+  const result = rest(survival, { place, hours, ladderAccRates: ladderAccRates || undefined });
+  setStateExtension('survival', result.state);
+
+  // Отдых в постели (патч 215): каждая накопленная порция 12 часов сна
+  // в кровати снимает 1 единицу с каждой болезни.
+  let bedRestHealed = [];
+  if (result.bedRestCompleted > 0 && typeof reducePersistentDiseaseRanks === 'function') {
+    bedRestHealed = reducePersistentDiseaseRanks(result.bedRestCompleted).healed;
+  }
+
+  // Мост контуров (§5): сон двигает таймеры эффектов как N × 12 сцен.
+  const { expired } = advanceEffectsByGameHours(hours);
+
+  // Сон в пустоши — проверка заболевания (sleepOnGround, §7).
+  // 406: Естественная стойкость — «сон на земле» не проверяется на болезнь.
+  const diseaseRiskResult = place === 'wasteland'
+    ? (sleepOnGroundDiseaseImmune ? { skipped: 'naturalResistance' } : store.applyDiseaseExposureEvent('sleepOnGround'))
+    : null;
+
+  debugLog('survival.sleep.apply', {
+    place,
+    hours,
+    sleepTo: result.state.sleep,
+    fatigueAfter: result.state.fatigue.reduce((sum, f) => sum + f.amount, 0),
+    bedRestCompleted: result.bedRestCompleted,
+    bedRestHealed,
+    diseaseRiskResult,
+    effectsExpired: expired.length,
+  });
+
+  return {
+    ok: true,
+    result,
+    bedRestCompleted: result.bedRestCompleted,
+    bedRestHealed,
+    diseaseRiskResult,
+    effectsExpired: expired,
+  };
+};
+
+/**
+ * Ожидание (патч 439, слово владельца: кнопка «Сон\Ждать», пункт
+ * «Ожидание» в модалке). Работает почти как сон: часы идут, мост контуров
+ * двигает таймеры эффектов. Отличия: тратятся ВСЕ три параметра (лестница
+ * сна не заморожена), ничего не восполняется (лестницы сна, снятие
+ * усталости сна, бонус, отдых в постели — всё мимо), и усталость ест
+ * текущие ОЗ как в обычном часовом тике. Если текущие ОЗ станут меньше 0 —
+ * died:true (модалка показывает алерт «Персонаж умер»; стор держит ОЗ
+ * не ниже 0, смерть определяем по счёту до применения).
+ */
+export const waitSurvival = ({ hours }) => {
+  if (!survivalEnabled()) return { ok: false, reason: 'disabled' };
+  const survival = currentSurvival();
+  if (!survival) return { ok: false, reason: 'notCapable' };
+
+  const store = useCharacterStore.getState();
+  const { ladderAccRates } = survivalPerkOptions();
+  const result = wait(survival, { hours, ladderAccRates: ladderAccRates || undefined });
+  store.setStateExtension('survival', result.state);
+
+  const hpBefore = store.currentHealth;
+  if (result.hpLoss > 0) store.applySurvivalHpLoss(result.hpLoss);
+  const died = result.hpLoss > 0 && hpBefore - result.hpLoss < 0;
+
+  let expired = [];
+  if (typeof store.advanceEffectsByGameHours === 'function') {
+    ({ expired } = store.advanceEffectsByGameHours(hours));
+  }
+
+  debugLog('survival.wait.apply', { hours, hpLoss: result.hpLoss, died, expiredEffects: expired.length });
+
+  return { ok: true, result, hpLoss: result.hpLoss, died, expired };
+};
+
+/**
+ * «Работа идёт время» (патч 262, переоткрыто владельцем): длительность разбора
+ * и крафта привязана к часам выживания. Операция получает ИГРОВЫЕ минуты,
+ * прогоняет лестницы через те же часовые тики, что и реальный часовой контур
+ * (дробь копится в timeCarried: шесть разборов по 10 минут складываются в
+ * час), двигает таймеры временных эффектов и фиксирует потерю ОЗ от усталости
+ * — ровно как тик часов. Осложнение (×2) в минуты уже домножен вызывающим.
+ *
+ * Гейты общие с часами: выключенное настройкой выживание — заморожено, у
+ * персонажа без шкал (робот/киборг) — нечего двигать; в обоих случаях
+ * applied:false и ответ контракта несёт время «как есть» — экран решает сам.
+ */
+export const applyActivityMinutes = (minutes, cause = 'activity') => {
+  const skip = (reason) => ({ applied: false, reason, gameHours: 0, events: [] });
+  if (!Number.isFinite(minutes) || minutes <= 0) return skip('nothing-to-spend');
+  if (!survivalEnabled()) return skip('disabled');
+  const survival = currentSurvival();
+  if (!survival) return skip('notCapable');
+
+  const store = useCharacterStore.getState();
+  const gameHours = minutes / 60;
+  const result = advanceHours(survival, gameHours, {
+    ladderAccRates: survivalPerkOptions().ladderAccRates || undefined,
+  });
+  store.setStateExtension('survival', result.state);
+
+  // Потеря текущих ОЗ за истёкшие рабочие часы (то же, что тик часов, патч 232).
+  const hpLoss = fatigueHpLossFromEvents(result.events);
+  if (hpLoss > 0) useCharacterStore.getState().applySurvivalHpLoss(hpLoss);
+
+  // Мост контуров: эффект-таймеры идут вместе с часами (целое число сцен
+  // обеспечивает округление в сторе, патч 262).
+  let expired = [];
+  if (typeof store.advanceEffectsByGameHours === 'function') {
+    ({ expired } = store.advanceEffectsByGameHours(gameHours));
+  }
+
+  debugLog('survival.activity.minutes', {
+    cause,
+    minutes,
+    gameHours,
+    hpLoss,
+    expiredEffects: expired.length,
+  });
+  return { applied: true, cause, minutes, gameHours, events: result.events, hpLoss, expired };
+};

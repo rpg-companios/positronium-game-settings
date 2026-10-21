@@ -1,0 +1,162 @@
+[
+  {
+    "id": "drink_glowing_blood_pack",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 3
+    },
+    "materials": [
+      {
+        "itemId": "drink_blood_pack",
+        "count": 1
+      },
+      {
+        "itemId": "drink_irradiated_blood",
+        "count": 1
+      },
+      {
+        "itemId": "item_rare_materials",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "drink_refreshing_beverage",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 5
+    },
+    "materials": [
+      {
+        "itemId": "chem_radaway",
+        "count": 2
+      },
+      {
+        "itemId": "chem_stimpak",
+        "count": 1
+      },
+      {
+        "itemId": "drink_blood_pack",
+        "count": 1
+      },
+      {
+        "itemId": "drink_purified_water",
+        "count": 2
+      },
+      {
+        "itemId": "item_rare_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "drink_dirty_wastelander",
+    "requires": {
+      "skill": "SURVIVAL",
+      "complexity": 3
+    },
+    "materials": [
+      {
+        "itemId": "drink_nuka_cola",
+        "count": 1
+      },
+      {
+        "itemId": "drink_whiskey",
+        "count": 2
+      },
+      {
+        "itemId": "food_mutfruit",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "drink_purified_water",
+    "requires": {
+      "skill": "SURVIVAL",
+      "complexity": 1
+    },
+    "materials": [
+      {
+        "itemId": "drink_dirty_water",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "drink_melon_juice",
+    "requires": {
+      "skill": "SURVIVAL",
+      "complexity": 2
+    },
+    "materials": [
+      {
+        "itemId": "drink_purified_water",
+        "count": 1
+      },
+      {
+        "itemId": "food_melon",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "drink_mutfruit_juice",
+    "requires": {
+      "skill": "SURVIVAL",
+      "complexity": 2
+    },
+    "materials": [
+      {
+        "itemId": "drink_purified_water",
+        "count": 1
+      },
+      {
+        "itemId": "food_mutfruit",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "drink_tarberry_juice",
+    "requires": {
+      "skill": "SURVIVAL",
+      "complexity": 2
+    },
+    "materials": [
+      {
+        "itemId": "drink_purified_water",
+        "count": 1
+      },
+      {
+        "itemId": "food_tarberry",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "drink_potato_juice",
+    "requires": {
+      "skill": "SURVIVAL",
+      "complexity": 2
+    },
+    "materials": [
+      {
+        "itemId": "drink_purified_water",
+        "count": 1
+      },
+      {
+        "itemId": "food_tato",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  }
+]

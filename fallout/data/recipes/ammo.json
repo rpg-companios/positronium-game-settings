@@ -1,0 +1,672 @@
+[
+  {
+    "id": "ammo_38",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 1,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 10,
+      "cd": 5
+    }
+  },
+  {
+    "id": "ammo_10mm",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 1,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 8,
+      "cd": 4
+    }
+  },
+  {
+    "id": "ammo_308",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 1,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 6,
+      "cd": 3
+    }
+  },
+  {
+    "id": "ammo_flare",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 1,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 2,
+      "cd": 1
+    }
+  },
+  {
+    "id": "ammo_shotgun_shell",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 1,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 6,
+      "cd": 3
+    }
+  },
+  {
+    "id": "ammo_45",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 2,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": {
+      "base": 8,
+      "cd": 4
+    }
+  },
+  {
+    "id": "ammo_flamer_fuel",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 2,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": {
+      "base": 12,
+      "cd": 6
+    }
+  },
+  {
+    "id": "ammo_energy_cell",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 2,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": {
+      "base": 14,
+      "cd": 7
+    }
+  },
+  {
+    "id": "ammo_gamma_round",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 2,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": {
+      "base": 4,
+      "cd": 2
+    }
+  },
+  {
+    "id": "ammo_railway_spike",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 2,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": {
+      "base": 6,
+      "cd": 3
+    }
+  },
+  {
+    "id": "ammo_syringe",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 2,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": {
+      "base": 4,
+      "cd": 2
+    }
+  },
+  {
+    "id": "ammo_44_magnum",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 3,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 4,
+      "cd": 2
+    }
+  },
+  {
+    "id": "ammo_50_cal",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 3,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 4,
+      "cd": 2
+    }
+  },
+  {
+    "id": "ammo_5_56mm",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 3,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 8,
+      "cd": 4
+    }
+  },
+  {
+    "id": "ammo_5mm",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 3,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 12,
+      "cd": 6
+    }
+  },
+  {
+    "id": "ammo_fusion_core",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 3,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 1
+    }
+  },
+  {
+    "id": "ammo_missile",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 3,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 2,
+      "cd": 1
+    }
+  },
+  {
+    "id": "ammo_plasma_cartridge",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 4,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 3
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 5
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": {
+      "base": 10,
+      "cd": 5
+    }
+  },
+  {
+    "id": "ammo_2mm_ec",
+    "requires": {
+      "skill": "REPAIR",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "ammosmith",
+          "rank": 3
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 6
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_rare_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": {
+      "base": 6,
+      "cd": 3
+    }
+  },
+  {
+    "id": "ammo_syringe_berserk",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 4
+    },
+    "materials": [
+      {
+        "itemId": "drink_bourbon",
+        "count": 1
+      },
+      {
+        "itemId": "drink_dirty_water",
+        "count": 1
+      },
+      {
+        "itemId": "item_common_materials",
+        "count": 1
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_bleed_out",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 3
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 1
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_bloatfly_larva",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 3
+    },
+    "materials": [
+      {
+        "itemId": "bloatfly_gland",
+        "count": 1
+      },
+      {
+        "itemId": "chem_psycho",
+        "count": 1
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_endangerol",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 4
+    },
+    "materials": [
+      {
+        "itemId": "chem_med_x",
+        "count": 1
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_lock_joint",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 5
+    },
+    "materials": [
+      {
+        "itemId": "drink_dirty_water",
+        "count": 1
+      },
+      {
+        "itemId": "food_tarberry",
+        "count": 2
+      },
+      {
+        "itemId": "item_common_materials",
+        "count": 1
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      },
+      {
+        "itemId": "stingwing_barb",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_mind_cloud",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 4
+    },
+    "materials": [
+      {
+        "itemId": "abraxo_cleaner",
+        "count": 1
+      },
+      {
+        "itemId": "asbestos",
+        "count": 2
+      },
+      {
+        "itemId": "drink_purified_water",
+        "count": 1
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_pax",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 3
+    },
+    "materials": [
+      {
+        "itemId": "drink_nuka_cola",
+        "count": 1
+      },
+      {
+        "itemId": "food_mutfruit",
+        "count": 2
+      },
+      {
+        "itemId": "item_common_materials",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_radscorpion_venom",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 3
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 1
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 1
+      },
+      {
+        "itemId": "radscorpion_stinger",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "ammo_syringe_yellow_belly",
+    "requires": {
+      "skill": "SCIENCE",
+      "complexity": 4
+    },
+    "materials": [
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 5
+      }
+    ],
+    "outputQuantity": 1
+  }
+]

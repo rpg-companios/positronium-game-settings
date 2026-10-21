@@ -1,0 +1,153 @@
+[
+  {
+    "id": "survivalModeEnabled",
+    "type": "boolean",
+    "controlSurface": "settings",
+    "sectionKey": "survival",
+    "labelKey": "settings.survivalSystemTitle",
+    "descriptionKey": "settings.survivalSystemDescription",
+    "defaultValue": false,
+    "legacyKeys": [
+      "survivalModeEnabled"
+    ]
+  },
+  {
+    "id": "survivalTimeCourseMinutes",
+    "type": "number",
+    "controlSurface": "settings",
+    "sectionKey": "survival",
+    "labelKey": "settings.survivalTimeCourseTitle",
+    "descriptionKey": "settings.survivalTimeCourseDescription",
+    "defaultValue": 30,
+    "min": 1,
+    "max": 1440,
+    "freeInput": true,
+    "dependsOn": "survivalModeEnabled",
+    "legacyKeys": [
+      "survivalTimeCourseMinutes"
+    ]
+  },
+  {
+    "id": "weaponDurabilityLossEnabled",
+    "type": "boolean",
+    "controlSurface": "settings",
+    "sectionKey": "survival",
+    "labelKey": "settings.durabilityTitle",
+    "descriptionKey": "settings.durabilityDescription",
+    "defaultValue": true,
+    "legacyKeys": [
+      "weaponDurabilityLossEnabled",
+      "randomWeaponDurabilityEnabled"
+    ]
+  },
+  {
+    "id": "weaponDurabilityLossPer10Shots",
+    "type": "number",
+    "controlSurface": "settings",
+    "sectionKey": "survival",
+    "labelKey": "settings.lossTitle",
+    "descriptionKey": "settings.lossDescription",
+    "defaultValue": 1,
+    "min": 1,
+    "max": 100,
+    "dependsOn": "weaponDurabilityLossEnabled",
+    "legacyKeys": [
+      "weaponDurabilityLossPer10Shots"
+    ]
+  },
+  {
+    "id": "randomWeaponQualityEnabled",
+    "type": "boolean",
+    "controlSurface": "settings",
+    "sectionKey": "survival",
+    "labelKey": "settings.qualityTitle",
+    "descriptionKey": "settings.qualityDescription",
+    "defaultValue": false,
+    "legacyKeys": [
+      "randomWeaponQualityEnabled",
+      "randomWeaponDurabilityEnabled"
+    ]
+  },
+  {
+    "id": "unarmedAttackVisible",
+    "type": "boolean",
+    "controlSurface": "equipment",
+    "sectionKey": "combat",
+    "labelKey": "settings.unarmedTitle",
+    "descriptionKey": "settings.unarmedDescription",
+    "defaultValue": true,
+    "legacyKeys": [
+      "unarmedAttackVisible"
+    ]
+  },
+  {
+    "id": "weaponCardsDisplayMode",
+    "type": "select",
+    "controlSurface": "equipment",
+    "sectionKey": "combat",
+    "labelKey": "settings.cardsTitle",
+    "descriptionKey": "settings.cardsDescription",
+    "defaultValue": "cards",
+    "options": [
+      {
+        "value": "cards",
+        "labelKey": "settings.cards.cards"
+      },
+      {
+        "value": "spoilers",
+        "labelKey": "settings.cards.spoilers"
+      }
+    ],
+    "legacyKeys": [
+      "weaponCardsDisplayMode"
+    ]
+  },
+  {
+    "id": "robotArmPartsStrictReplace",
+    "type": "boolean",
+    "controlSurface": "settings",
+    "sectionKey": "robots",
+    "labelKey": "settings.robotArmsStrictTitle",
+    "descriptionKey": "settings.robotArmsStrictDescription",
+    "defaultValue": true,
+    "legacyKeys": [
+      "robotArmPartsStrictReplace"
+    ]
+  },
+  {
+    "id": "craftFailLossConsumables",
+    "type": "boolean",
+    "controlSurface": "settings",
+    "sectionKey": "crafting",
+    "labelKey": "settings.craftLossConsumablesTitle",
+    "descriptionKey": "settings.craftLossConsumablesDescription",
+    "defaultValue": true,
+    "legacyKeys": [
+      "craftFailLossConsumables"
+    ]
+  },
+  {
+    "id": "craftFailLossGear",
+    "type": "boolean",
+    "controlSurface": "settings",
+    "sectionKey": "crafting",
+    "labelKey": "settings.craftLossGearTitle",
+    "descriptionKey": "settings.craftLossGearDescription",
+    "defaultValue": true,
+    "legacyKeys": [
+      "craftFailLossGear"
+    ]
+  },
+  {
+    "id": "modsRequireInventoryItem",
+    "type": "boolean",
+    "controlSurface": "settings",
+    "sectionKey": "crafting",
+    "labelKey": "settings.modsRequireInventoryTitle",
+    "descriptionKey": "settings.modsRequireInventoryDescription",
+    "defaultValue": false,
+    "legacyKeys": [
+      "modsRequireInventoryItem"
+    ]
+  }
+]

@@ -1,0 +1,316 @@
+import React, { useMemo, useState, useEffect } from 'react';
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+} from 'react-native';
+import useCharacterStore from '../../../../../src/store/characterStore';
+import { useSettingAction } from '../../../../../src/store/useSettingAction.js';
+import { canEquipRobotArmor } from '../../../logic/robotEquip.js';
+import { selectFalloutRobotState } from '../../../store/robotSelectors.js';
+import { getSlotDef, withArmorLayer } from '../../../logic/robotSlots.js';
+import { useLocale, useModuleLocale, useModuleCatalogRevision } from '../../../../../i18n/locale';
+import { getEquipmentCatalog } from '../../../../../i18n/equipmentCatalog';
+import { tCharacterScreen } from '../logic/characterScreenI18n';
+
+// ---------------------------------------------------------------------------
+// Layer colors (matches RobotSlot.js)
+// ---------------------------------------------------------------------------
+const LAYER_COLORS = {
+  plating: '#4a90d9',
+  armor:   '#e67e22',
+  frame:   '#27ae60',
+};
+
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+
+/** Returns localized robot armor from the active setting catalog. */
+const getArmorCatalogForLayer = (catalog, layer) => {
+  if (layer === 'plating') return catalog.robotPlating || [];
+  if (layer === 'armor') return catalog.robotArmorLayer || [];
+  if (layer === 'frame') return catalog.robotFrames || [];
+  return [];
+};
+
+/** Layer-specific modal title is engine-owned screen UI. */
+const getLayerTitle = (layer) => {
+  if (layer === 'plating') return tCharacterScreen('modals.armor.upgradePlating');
+  if (layer === 'armor') return tCharacterScreen('modals.armor.upgradeArmor');
+  if (layer === 'frame') return tCharacterScreen('modals.armor.upgradeFrame');
+  return tCharacterScreen('modals.armor.upgradeArmor');
+};
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+const StatRow = ({ label, value }) => {
+  if (value === null || value === undefined) return null;
+  return (
+    <View style={styles.statRow}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+    </View>
+  );
+};
+
+const ArmorCard = ({ item, isSelected, layerColor, onPress }) => {
+  const dr = item.damageResistance ?? {};
+
+  return (
+    <TouchableOpacity
+      style={[styles.armorCard, isSelected && { borderColor: layerColor, backgroundColor: '#f0f7ff' }]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      <Text style={[styles.armorName, isSelected && { color: layerColor }]}>
+        {item.name}
+      </Text>
+      <View style={styles.statsContainer}>
+        {dr.physical !== undefined && (
+          <StatRow label={tCharacterScreen('labels.physDR')} value={dr.physical} />
+        )}
+        {dr.energy !== undefined && (
+          <StatRow label={tCharacterScreen('labels.enrgDR')} value={dr.energy} />
+        )}
+        {item.carryWeightModifier !== undefined && item.carryWeightModifier !== 0 && (
+          <StatRow label={tCharacterScreen('labels.carry')} value={item.carryWeightModifier > 0 ? `+${item.carryWeightModifier}` : item.carryWeightModifier} />
+        )}
+      </View>
+      {item.perkRequired && (
+        <Text style={styles.perkRequired}>
+          {tCharacterScreen('labels.requires')}{item.perkRequired}
+        </Text>
+      )}
+      {item.special ? (
+        <Text style={styles.specialText}>{item.special}</Text>
+      ) : null}
+    </TouchableOpacity>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// ArmorLayerModal
+// ---------------------------------------------------------------------------
+
+/**
+ * Props:
+ *   visible      {boolean}
+ *   slotKey      {string}        - e.g. "leftArm", "head"
+ *   layer        {'plating'|'armor'|'frame'}
+ *   currentItem  {object|null}   - currently equipped item in this layer
+ *   onClose      {function}
+ */
+const ArmorLayerModal = ({ visible, slotKey, layer, currentItem, onClose }) => {
+  // Шаг 8а: слоты робота — слайс robot стора напрямую.
+  const equippedRobotSlots = useCharacterStore((s) => selectFalloutRobotState(s).slots ?? null);
+  const setEquippedRobotSlots = useSettingAction('robotEquipment', 'setEquippedRobotSlots');
+  // Шаг 8в (патч 243): контекст снесён — bodyPlan читается из стора напрямую.
+  const bodyPlan = useCharacterStore((s) => selectFalloutRobotState(s).bodyPlan ?? null);
+  useLocale();
+  const moduleLocale = useModuleLocale();
+  const catalogRevision = useModuleCatalogRevision();
+  const equipmentCatalog = useMemo(
+    () => getEquipmentCatalog(moduleLocale),
+    [moduleLocale, catalogRevision],
+  );
+  const layerColor = LAYER_COLORS[layer] ?? '#888';
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  useEffect(() => {
+    if (!visible) {
+      setSelectedItem(null);
+      return;
+    }
+    setSelectedItem(currentItem || null);
+  }, [visible, currentItem]);
+
+  const compatibleItems = useMemo(() => {
+    if (!slotKey || !layer || !equippedRobotSlots) return [];
+    // Слой подходит по ТИПУ конечности, который принимает слот плана тела.
+    // Никаких строковых локаций («Arms», «Optics») — только данные.
+    const limbType = getSlotDef(bodyPlan, slotKey)?.accepts?.[0] ?? null;
+    if (!limbType) return [];
+
+    const catalog = getArmorCatalogForLayer(equipmentCatalog, layer);
+    return catalog.filter((item) => {
+      if (item.limbType !== limbType) return false;
+      const { allowed } = canEquipRobotArmor(item, slotKey, layer, equippedRobotSlots);
+      return allowed;
+    });
+  }, [slotKey, layer, equippedRobotSlots, equipmentCatalog, bodyPlan]);
+
+  const handleApply = () => {
+    if (!equippedRobotSlots || !slotKey) return;
+    setEquippedRobotSlots((prev) => ({
+      ...prev,
+      [slotKey]: withArmorLayer(prev[slotKey], layer, selectedItem || null),
+    }));
+    onClose();
+  };
+
+  const title = getLayerTitle(layer);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.container} onPress={(e) => e.stopPropagation()}>
+          <Text style={[styles.title, { color: layerColor }]}>{title}</Text>
+
+          {compatibleItems.length === 0 && !currentItem ? (
+            <Text style={styles.emptyText}>
+              {tCharacterScreen('modals.armor.noItems')}
+            </Text>
+          ) : (
+            <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+              {compatibleItems.map((item) => {
+                const isSelected = selectedItem?.id === item.id;
+                return (
+                  <ArmorCard
+                    key={item.id}
+                    item={item}
+                    isSelected={isSelected}
+                    layerColor={layerColor}
+                    onPress={() => setSelectedItem((prev) => (prev?.id === item.id ? null : item))}
+                  />
+                );
+              })}
+            </ScrollView>
+          )}
+
+          <TouchableOpacity style={[styles.closeButton, { backgroundColor: layerColor, marginHorizontal: 12 }]} onPress={handleApply}>
+            <Text style={styles.closeButtonText}>
+              {tCharacterScreen('buttons.apply')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Text style={styles.closeButtonText}>
+              {tCharacterScreen('buttons.close')}
+            </Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    maxHeight: '80%',
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#888',
+    fontSize: 14,
+    marginVertical: 24,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  armorCard: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 8,
+    backgroundColor: '#fafafa',
+  },
+  armorName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 6,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginRight: 4,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginRight: 4,
+  },
+  statValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#333',
+  },
+  perkRequired: {
+    fontSize: 10,
+    color: '#c0392b',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  specialText: {
+    fontSize: 10,
+    color: '#555',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  closeButton: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingVertical: 10,
+    backgroundColor: '#5a5a5a',
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});
+
+export default ArmorLayerModal;

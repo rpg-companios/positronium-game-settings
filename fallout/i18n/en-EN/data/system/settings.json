@@ -1,0 +1,39 @@
+{
+  "survival": "Survival",
+  "combat": "Combat",
+  "interface": "Interface",
+  "survivalSystemTitle": "Hunger, thirst, sleep",
+  "survivalSystemDescription": "Hunger/thirst/sleep scales, fatigue and hourly HP loss. When off — the scales are hidden and time tracking is frozen; the character's state is kept in the save.",
+  "survivalTimeCourseTitle": "Time course",
+  "survivalTimeCourseDescription": "How many real minutes make one survival in-game hour (default 30). Time only accumulates while the app is open with a loaded character.",
+  "durabilityTitle": "Weapon wear on shots",
+  "durabilityDescription": "Enable weapon wear mechanics on shots.",
+  "lossTitle": "Durability loss per 10 shots",
+  "lossDescription": "By default 1 durability is spent per 10 shots. Unreliable weapons spend twice as much, Reliable — half.",
+  "qualityTitle": "Random weapon quality",
+  "qualityDescription": "Weapons added via Loot have random durability from 1 to 100. Merchant weapons are always 100%.",
+  "unarmedTitle": "Show unarmed attack",
+  "unarmedDescription": "The unarmed attack (fists/manipulator) is always in the first slot; this toggle controls its display on the equipment screen.",
+  "cardsTitle": "Weapon cards view",
+  "cardsDescription": "How weapons are displayed on the equipment screen.",
+  "cards": {
+    "cards": "Cards",
+    "spoilers": "Spoilers"
+  },
+  "languageTitle": "Interface language",
+  "languageDescription": "Application and data language.",
+  "language": {
+    "ru": "Russian",
+    "en": "English"
+  },
+  "robots": "Robots",
+  "robotArmsStrictTitle": "Arm attachments: like-for-like only",
+  "robotArmsStrictDescription": "On: an arm attachment can only be replaced by another attachment, a held weapon by another weapon; a limb’s built-in weapon requires replacing the limb itself. Off: any arms and weapons may be installed.",
+  "crafting": "Crafting",
+  "craftLossConsumablesTitle": "Material loss on failure: food, drinks, explosives, chems",
+  "craftLossConsumablesDescription": "By the book: a cooking station or chemical laboratory consumes all ingredients when the check fails. Off — materials are kept on failure.",
+  "craftLossGearTitle": "Material loss on failure: weapons, armor, ammo",
+  "craftLossGearDescription": "A failed component craft (weapons, armor, power armor, ammo and other) spends the materials. Off — materials are kept on failure.",
+  "modsRequireInventoryTitle": "Modification installation",
+  "modsRequireInventoryDescription": "A modification can be installed only if the modification itself is in the inventory. Off — installation is free: any mod available to the armor or weapon installs without the item."
+}

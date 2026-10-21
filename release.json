@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-21T09:07:22.251Z",
+  "repository": "rpg-companios/positronium-game-settings",
+  "settings": {
+    "fallout": {
+      "id": "fallout",
+      "name": "Fallout 2d20",
+      "version": 1,
+      "packFormat": 1,
+      "requiresCore": ">=1.0",
+      "tag": "fallout-v1",
+      "asset": "fallout.trpg",
+      "bytes": 20229846,
+      "sha256": "347e4bffd0c22f28aeccbb9fc1417fb3e9ee50400951574986d6f632bd0510ef",
+      "assetUrl": "https://github.com/rpg-companios/positronium-game-settings/releases/download/fallout-v1/fallout.trpg",
+      "latestUrl": "https://github.com/rpg-companios/positronium-game-settings/releases/latest/download/fallout.trpg"
+    }
+  }
+}

@@ -1,0 +1,607 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  ScrollView
+} from 'react-native';
+import { getSlotsForWeapon, getModsForWeaponSlot, getWeaponById, getWeaponModById } from '../../../../../db/Database';
+import { applyFalloutWeaponMods as applyWeaponMods } from '../../../logic/weaponModifiers.js';
+import { tWeaponsAndArmorScreen } from '../weaponsAndArmorScreenI18n';
+import { resolveWeaponQualities, resolveWeaponEffects, weaponModRowDescription } from '../../../logic/weaponDisplay.js';
+import styles from '../../../styles/WeaponModificationModal.styles';
+import { debugLog } from '../../../debug.js';
+import useAppSettingsStore from '../../../../../src/store/appSettingsStore';
+import useCharacterStore from '../../../../../src/store/characterStore';
+import { buildModCraftHint, buildCraftReport } from '../../../crafting/windowModel';
+import { craftRecipe, settleCraftTime, craftingPreview } from '../../../crafting/operations';
+import { getActionPoints } from '../../../logic/actionPoints.js';
+// 357: отчёт о крафте — тот же компонент, что в окне крафта (кубики, исход,
+// сгоревшие материалы, время, вопрос про 2 ОД).
+import CraftReportView from '../../../crafting/CraftReportView';
+// 364: вопросы/отказы — через ЕДИНУЮ точку диалогов (AlertHost работает
+// везде; системный Alert на Web — тихая заглушка).
+import { showRawAlert } from '../../../../../components/alerts/alertService';
+
+
+function toNumber(v) {
+  if (v === null || v === undefined) return 0;
+  const n = Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeModRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    prefix: row.prefix,
+    slot: normalizeSlotKey(row.slot),
+    rawSlot: row.slot,
+    // canonical DB fields only
+    weight: row.weight ?? 0,
+    cost: row.cost ?? 0,
+    // Localized description for UI (i18n effectDescription, locale-driven).
+    // 383: описания в i18n-записях модов нет — генерируем из механики мода
+    // («что делает мод?» отвечают данные: урон/скорострельность/эффекты/…).
+    ammoOverride: row.ammoOverride,
+    ammoPerShotDelta: row.ammoPerShotDelta,
+    weightModifier: row.weightModifier,
+    costModifier: row.costModifier,
+    effectDescription: weaponModRowDescription(row),
+    damageModifier: row.damageModifier,
+    fireRateModifier: row.fireRateModifier,
+    rangeModifier: row.rangeModifier,
+    damageType: row.damageType,
+    qualityChanges: row.qualityChanges,
+    effectChanges: row.effectChanges,
+    damageTypeOverride: row.damageTypeOverride,
+  };
+}
+
+// CRITICAL INVARIANT:
+// Only ONE installed mod per category(slot) is allowed at any time.
+// If a new mod is selected in the same category, it MUST replace the previous one.
+const CONFLICTING_MOD_SLOTS = Object.freeze({
+  grip: 'stock',
+  stock: 'grip',
+});
+
+// Стабильный порядок категорий модификаций в модалке.
+// Индекс в массиве = позиция в списке сверху вниз. Неизвестные слоты
+// попадают в конец, «other» — самый последний (это catch-all для
+// нестандартных имён из БД).
+// Логика: внутреннее → внешнее (механизм → дуло).
+const WEAPON_SLOT_ORDER = Object.freeze([
+  'receiver',      // Ресивер (огнестрел) / главный узел
+  'capacitor',     // Конденсатор (энергооружие)
+  'frame',         // Рама (арбалет, см. weapon_crossbow)
+  'winch',         // Лебёдка (boarding pistol)
+  'concentrate',   // Концентрат (assaultron head laser)
+  'barrel',        // Ствол
+  'canister',      // Дуло (broadsider)
+  'dish',          // Диск (gamma gun)
+  'magazine',      // Магазин
+  'container',     // Контейнер (assaultron)
+  'launcher',      // Пусковая установка (broadsider)
+  'fuel',          // Топливо (flamer)
+  'tank',          // Бак (flamer)
+  'grip',          // Рукоять
+  'stock',         // Ложа
+  'sight',         // Прицел
+  'muzzle',        // Дульная насадка
+  'nozzle',        // Сопло (flamer)
+  'unique',        // Уникальный (ближний бой и спец-оружие)
+  'other',         // fallback
+]);
+
+const slotOrderIndex = (slot) => {
+  const i = WEAPON_SLOT_ORDER.indexOf(slot);
+  return i === -1 ? WEAPON_SLOT_ORDER.length : i;
+};
+
+// Возвращает ключи modsBySlot, отсортированные по WEAPON_SLOT_ORDER.
+const sortedSlotKeys = (bySlot) =>
+  Object.keys(bySlot).sort((a, b) => slotOrderIndex(a) - slotOrderIndex(b));
+
+const setSelectedMod = (selected, slot, mod) => {
+  const next = { ...selected };
+  const oppositeSlot = CONFLICTING_MOD_SLOTS[slot];
+  if (oppositeSlot) delete next[oppositeSlot];
+  next[slot] = mod;
+  return next;
+};
+
+function normalizeSlotKey(slot) {
+  const raw = String(slot || '').trim();
+  if (!raw) return 'other';
+
+  const key = raw.toLowerCase().replace(/\s+/g, '');
+  // Canonicalize common plural DB values: Barrels -> barrel, Sights -> sight, Capacitors -> capacitor.
+  const singular = key.endsWith('s') ? key.slice(0, -1) : key;
+
+  // Keep a tiny alias map only for known irregular/legacy tokens.
+  const aliases = {
+    uniques: 'unique',
+  };
+
+  return aliases[singular] || singular;
+}
+
+// mod.prefix (а при его отсутствии — mod.name) уже локализован в
+// i18n/<loc>/data/equipment/weapons/weapon_mods.json — единственном источнике
+// истины для названий и префиксов модов. Второго словаря (modPrefixes) не нужно:
+// prefix приходит из каталога в языке текущей локали и используется напрямую.
+function getModDisplayName(mod) {
+  if (!mod) return '';
+  return (mod.prefix || mod.name || '').trim();
+}
+
+function applyDbModEffectsToWeapon(baseWeapon, selectedBySlot) {
+  const selectedMods = Object.values(selectedBySlot).filter(Boolean);
+  const baseName = baseWeapon.baseWeaponName ?? baseWeapon.name ?? '';
+
+  // строим имя только от базового имени, чтобы не дублировать префиксы при повторных открытиях
+  const prefixesRu = [];
+  for (const mod of selectedMods) {
+    const p = getModDisplayName(mod);
+    if (!p) continue;
+    if (!prefixesRu.includes(p)) prefixesRu.push(p);
+  }
+  const name = prefixesRu.length ? `${prefixesRu.join(' ')} ${baseName}` : baseName;
+
+  // The same pure resolver powers the preview and the saved weapon card, so
+  // linked variants and +, -, *, / operations cannot diverge between screens.
+  const preview = applyWeaponMods(baseWeapon, selectedMods);
+  const damageBase = toNumber(baseWeapon.damage);
+  const fireRateBase = toNumber(baseWeapon.fireRate);
+  const weightBase = toNumber(baseWeapon.weight);
+  const costBase = toNumber(baseWeapon.cost);
+  const damage = preview.damage;
+  const fire_rate = preview.fireRate;
+  const weight = preview.weight;
+  const cost = preview.cost;
+  const damage_type = preview.damageType;
+  const ammoId = preview.ammoId;
+  const rangeNames = tWeaponsAndArmorScreen('weapon.rangeNames') || {};
+  const range_name = rangeNames[preview.range_name] || preview.range_name;
+  const effectsValue = preview.effects.length ? JSON.stringify(preview.effects) : '–';
+  const qualitiesValue = preview.qualities.length ? JSON.stringify(preview.qualities) : '–';
+
+  debugLog('weapon.mod.compute', {
+    weaponId: baseWeapon?.id ?? baseWeapon?.weaponId,
+    baseName,
+    selectedMods: selectedMods.map((m) => ({ id: m.id, slot: m.slot, rawSlot: m.rawSlot, damageModifier: m.damageModifier, fireRateModifier: m.fireRateModifier, rangeModifier: m.rangeModifier, qualityChanges: m.qualityChanges, damageTypeOverride: m.damageTypeOverride })),
+    baseDamage: damageBase,
+    resultDamage: damage,
+    baseFireRate: fireRateBase,
+    resultFireRate: fire_rate,
+    baseWeight: weightBase,
+    resultWeight: weight,
+    baseCost: costBase,
+    resultCost: cost,
+    rangeIndex: preview.range_index,
+    resultRange: range_name,
+    baseDamageType: baseWeapon.damageType,
+    resultDamageType: damage_type,
+  });
+
+  return {
+    ...baseWeapon,
+    name,
+    baseWeaponName: baseName,
+    damage,
+    fireRate: fire_rate,
+    damageType: damage_type,
+    rangeName: range_name,
+    qualities: qualitiesValue,
+    effects: effectsValue,
+    weight: String(weight),
+    cost,
+    ammoId,
+    // сохраняем выбранные моды
+    appliedMods: Object.fromEntries(
+      Object.entries(selectedBySlot).map(([slot, mod]) => [slot, mod?.id]).filter(([, id]) => !!id)
+    ),
+    _selectedModsBySlot: selectedBySlot,
+  };
+}
+
+// Компонент для сворачиваемой секции
+const CollapsibleSection = ({ title, children, isExpanded, onToggle }) => {
+  return (
+    <View style={styles.collapsibleSection}>
+      <TouchableOpacity onPress={onToggle} style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</Text>
+      </TouchableOpacity>
+      {isExpanded && (
+        <View style={styles.sectionContent}>
+          {children}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const WeaponModificationModal = ({ visible, onClose, weapon, onApplyModification }) => {
+  const [selectedModifications, setSelectedModifications] = useState({}); // slot -> modRow
+  const [modifiedWeapon, setModifiedWeapon] = useState(weapon);
+  const [baseWeaponForMods, setBaseWeaponForMods] = useState(weapon);
+  const [expandedCategories, setExpandedCategories] = useState({}); // slot -> boolean
+  const [modsBySlot, setModsBySlot] = useState({}); // slot -> modRow[]
+
+  // 352 (план §2.10): кнопка «Создать» на позиции мода — при включённой
+  // настройке «Установка модификаций»; скрыта, если мод уже в инвентаре.
+  const modsViaCraft = useAppSettingsStore((s) => s.getSettingValue('modsRequireInventoryItem'));
+  const storeItems = useCharacterStore((s) => s.items);
+  const selectedPerks = useCharacterStore((s) => s.selectedPerks);
+
+  const [craftReport, setCraftReport] = useState(null); // 357: отчёт о крафте
+  const [settledTime, setSettledTime] = useState(null); // итог после решения про 2 ОД
+
+  const handleCreateMod = (modId, modName) => {
+    // 356 (механизм проверок): сложность снята навыком — спросить про бросок.
+    // «Да» — бросаем, действуют правила Успехов/Провалов; «нет» — автоуспех.
+    const evaluation = craftingPreview(modId)?.evaluation;
+    if (evaluation?.auto) {
+      // 364: вопрос через единую точку диалогов; закрытие без выбора = автоуспех.
+      showRawAlert({
+        title: tWeaponsAndArmorScreen('modals.createAskZeroTitle'),
+        message: tWeaponsAndArmorScreen('modals.createAskZeroText'),
+        kind: 'choice',
+        buttons: [
+          { text: tWeaponsAndArmorScreen('modals.createAskZeroRoll') },
+          { text: tWeaponsAndArmorScreen('modals.createAskZeroAuto'), style: 'cancel' },
+        ],
+      }).then((index) => runCreateMod(modId, modName, index === 0 ? 'roll' : 'auto'));
+      return;
+    }
+    runCreateMod(modId, modName, 'auto');
+  };
+
+  const runCreateMod = (modId, modName, zeroDifficulty) => {
+    const run = craftRecipe(modId, {}, { deferTime: true, zeroDifficulty });
+    if (run.stage === 'gate' || run.stage === 'store') {
+      // 352: отказ ДО проверки — короткое объяснение (перк/материалы).
+      const reasons = Array.isArray(run.reasons) ? run.reasons : [];
+      const reasonKey = reasons.some((r) => r?.code === 'missing-perk')
+        ? 'modals.createFailMissingPerk'
+        : 'modals.createFailMaterials';
+      showRawAlert({
+        title: tWeaponsAndArmorScreen('modals.createFailTitle'),
+        message: tWeaponsAndArmorScreen(reasonKey),
+      });
+      return;
+    }
+    // 357 (слово владельца: «не понятно, что произошло и из-за чего»):
+    // дальше — тот же отчёт, что в окне крафта: арифметика проверки, кубики
+    // и исход, что получено/сгорело, время; при успехе — вопрос про 2 ОД
+    // (324). Если ОД в пуле меньше двух — время списывается сразу, полное.
+    const rep = buildCraftReport(modId, { attempts: [run], stoppedEarly: 0 });
+    let settled = null;
+    if (rep.pendingTime && (!rep.pendingTime.hasSuccess || getActionPoints() < 2)) {
+      settled = settleCraftTime(modId, run, { spendActionPoints: false });
+    }
+    setSettledTime(settled);
+    setCraftReport({ ...rep, run, title: modName || rep.title });
+  };
+
+  // Решение про 2 ОД (323/324) — как в окне крафта.
+  const settleCraftTimeDecision = (spendActionPoints) => {
+    const settled = settleCraftTime(craftReport.recipeId, craftReport.run, { spendActionPoints });
+    setSettledTime(settled);
+  };
+
+  const finishCraftReport = () => {
+    setCraftReport(null);
+    setSettledTime(null);
+  };
+
+  // Обновляем modifiedWeapon при изменении weapon
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!weapon || !visible) return undefined;
+
+    (async () => {
+      try {
+        const weaponId = weapon.id ?? weapon.weaponId;
+        const dbWeapon = weaponId ? await getWeaponById(weaponId) : null;
+
+        // фиксируем базовое имя и базовые характеристики из БД,
+        // чтобы повторное открытие/перевыбор модов не накапливал префиксы и статы
+        const weaponWithBase = {
+          ...weapon,
+          ...(dbWeapon || {}),
+          id: weaponId ?? dbWeapon?.id,
+          weaponId: weaponId ?? dbWeapon?.id,
+          // baseName варианта (напр. «Опасная бритва») важнее имени из БД:
+          // моды должны собираться от перезаписанного имени предмета.
+          baseWeaponName: weapon?.baseName || (dbWeapon?.name ?? weapon?.name ?? ''),
+          appliedMods: weapon.appliedMods || {},
+        };
+
+        setBaseWeaponForMods(weaponWithBase);
+        setModifiedWeapon(weaponWithBase);
+
+        const resolvedWeaponId = weaponWithBase.id ?? weaponWithBase.weaponId;
+        if (!resolvedWeaponId) {
+          setModsBySlot({});
+          setSelectedModifications({});
+          return;
+        }
+
+        const slots = await getSlotsForWeapon(resolvedWeaponId);
+        const bySlot = {};
+
+        // ПРАВИЛО (владелец, патч 108; уточнение патча 306): источник слотов —
+        // данные модуля. Для оружия людей — weapon_mod_slots.json; слоты
+        // робо-оружия ВЫВЕДЕНЫ из самих модов (slot + applies_to_ids),
+        // файл-дубль robot/weapon_mod_slots.json удалён. Оба вида приходят
+        // сюда одним списком через каталог (getSlotsForWeapon).
+        if (slots && slots.length) {
+          for (const slot of slots) {
+            const normalizedSlot = normalizeSlotKey(slot);
+            const mods = await getModsForWeaponSlot(resolvedWeaponId, slot);
+            const normalizedMods = (mods || []).map(normalizeModRow).filter(Boolean);
+            normalizedMods.forEach((m) => debugLog('weapon.mod.row', { weaponId: resolvedWeaponId, slot, normalizedSlot, id: m.id, name: m.name, damageModifier: m.damageModifier, fireRateModifier: m.fireRateModifier, rangeModifier: m.rangeModifier, qualityChanges: m.qualityChanges, effectDescription: m.effectDescription }));
+            if (!bySlot[normalizedSlot]) bySlot[normalizedSlot] = [];
+            bySlot[normalizedSlot].push(...normalizedMods);
+          }
+        }
+
+        // выбранные моды из appliedMods (если уже есть)
+        let selected = {};
+        const applied = weaponWithBase.appliedMods || {};
+        for (const [slot, modId] of Object.entries(applied)) {
+          const modRow = await getWeaponModById(modId);
+          const normalizedSlot = normalizeSlotKey(slot);
+          if (modRow) {
+            selected = setSelectedMod(selected, normalizedSlot, normalizeModRow(modRow));
+          }
+        }
+
+        // 350–352 (настройка «Установка модификаций»): список НЕ фильтруется —
+        // у каждой позиции кнопка «Создать» (352); моды, УЖЕ установленные на
+        // этом оружии, тоже видны — иначе их не снять.
+        if (cancelled) return;
+        setModsBySlot(bySlot);
+        setSelectedModifications(selected);
+
+        const computed = applyDbModEffectsToWeapon(weaponWithBase, selected);
+        setModifiedWeapon(computed);
+      } catch (e) {
+        if (!cancelled) {
+          setModsBySlot({});
+          setSelectedModifications({});
+          setBaseWeaponForMods(weapon);
+          setModifiedWeapon(weapon);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [weapon, visible]);
+
+  const handleToggleCategory = (slot) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [slot]: !prev[slot]
+    }));
+  };
+
+  const handleSelectModification = (slot, mod) => {
+    if (!weapon) return;
+
+    // Повторное нажатие на уже выбранный мод → снять его со слота
+    let newSelected;
+    if (selectedModifications[slot]?.id === mod.id) {
+      newSelected = { ...selectedModifications };
+      delete newSelected[slot];
+    } else {
+      newSelected = setSelectedMod(selectedModifications, slot, mod);
+    }
+
+    setSelectedModifications(newSelected);
+    setModifiedWeapon(applyDbModEffectsToWeapon(baseWeaponForMods || weapon, newSelected));
+  };
+
+  const handleApplyModification = () => {
+    if (!weapon) {
+      return;
+    }
+
+    const modificationsArray = Object.values(selectedModifications);
+    debugLog('weapon.mod.apply.modal', { modificationsArray: modificationsArray.map((m) => ({ id: m.id, slot: m.slot, damageModifier: m.damageModifier, fireRateModifier: m.fireRateModifier })), modifiedWeapon });
+    // Разрешаем применить даже с нулём модов — это означает снятие всех модов с оружия
+    onApplyModification(modifiedWeapon);
+    // 363 (репорт владельца: «прикрепляю — ui не меняется»): окно не
+    // закрывается молча — свежий weapon приходит с экрана, выбор
+    // перечитывается, а зелёная отметка показывает, что применилось.
+    const names = modificationsArray
+      .map((m) => getModDisplayName(m, weapon?.baseWeaponName ?? weapon?.name) || m.name)
+      .filter(Boolean);
+    setInstallNote(names.join(', ') || null);
+    setCraftReport(null);
+  };
+
+  const handleClose = () => {
+    setSelectedModifications({});
+    setExpandedCategories({});
+    setModsBySlot({});
+    setBaseWeaponForMods(null);
+    onClose();
+  };
+
+  // Если оружие не передано или нет id — не показываем модальное окно
+  if (!weapon || !(weapon.id ?? weapon.weaponId)) {
+    return null;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={handleClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{tWeaponsAndArmorScreen('modals.weaponModification')}</Text>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalBody}>
+            {/* Информация об оружии */}
+            <View style={styles.weaponInfo}>
+              <Text style={styles.weaponTitle}>{weapon?.name || tWeaponsAndArmorScreen('modals.unknownWeapon')}</Text>
+              <Text style={styles.weaponStats}>
+                {tWeaponsAndArmorScreen('modals.weaponDamage')}: {weapon?.damage ?? 0} | {tWeaponsAndArmorScreen('modals.weaponFireRate')}: {weapon?.fireRate ?? 0} |
+                {tWeaponsAndArmorScreen('modals.weaponRange')}: {weapon?.range_name ?? tWeaponsAndArmorScreen('weapon.rangeDefault')} | {tWeaponsAndArmorScreen('modals.weaponWeight')}: {weapon?.weight ?? 0} | {tWeaponsAndArmorScreen('modals.weaponCost')}: {weapon?.cost ?? 0}
+              </Text>
+            </View>
+
+            {/* Доступные модификации */}
+            <View style={styles.modificationsSection}>
+              <Text style={styles.sectionTitle}>{tWeaponsAndArmorScreen('modals.availableModificationsLabel')}</Text>
+              {sortedSlotKeys(modsBySlot).map((slot) => {
+                const mods = modsBySlot[slot] || [];
+                return (
+                <CollapsibleSection
+                  key={slot}
+                  title={`${tWeaponsAndArmorScreen(`weapon.modSlots.${slot}`, slot)} (${mods.length})`}
+                  isExpanded={expandedCategories[slot]}
+                  onToggle={() => handleToggleCategory(slot)}
+                >
+                  {/* Кнопка «Без мода» — всегда первая в списке слота */}
+                  <TouchableOpacity
+                    style={[styles.modificationItem, !selectedModifications[slot] && styles.selectedModification]}
+                    onPress={() => {
+                      const newSelected = { ...selectedModifications };
+                      delete newSelected[slot];
+                      setSelectedModifications(newSelected);
+                      setModifiedWeapon(applyDbModEffectsToWeapon(baseWeaponForMods || weapon, newSelected));
+                    }}
+                  >
+                    <Text style={styles.modificationName}>
+                      {selectedModifications[slot]
+                        ? tWeaponsAndArmorScreen('modals.removeWeaponMod')
+                        : tWeaponsAndArmorScreen('modals.noWeaponMod')}
+                    </Text>
+                  </TouchableOpacity>
+                  {mods.map((mod, index) => {
+                    // 352: кнопка и требования — у НЕ установленного (на этом
+                    // оружии) мода, без своего предмета в инвентаре.
+                    const hint = buildModCraftHint(mod.id, { items: storeItems, selectedPerks });
+                    const isInstalledHere = selectedModifications[slot]?.id === mod.id;
+                    const showCreate = modsViaCraft && hint && !hint.inInventory && !isInstalledHere;
+                    return (
+                    <View
+                      key={index}
+                      style={[
+                        styles.modificationItem,
+                        selectedModifications[slot]?.id === mod.id && styles.selectedModification
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={styles.modItemMain}
+                        onPress={() => handleSelectModification(slot, mod)}
+                      >
+                        <Text style={styles.modificationName}>{getModDisplayName(mod, weapon?.baseWeaponName ?? weapon?.name) || mod.name}</Text>
+                        <Text style={styles.modificationEffects}>
+                          {`${tWeaponsAndArmorScreen('modals.previewEffects')}: ${mod.effectDescription || tWeaponsAndArmorScreen('common.empty')}`}
+                        </Text>
+                        <Text style={styles.modificationStats}>
+                          {tWeaponsAndArmorScreen('modals.weight')}: {toNumber(mod.weight) >= 0 ? '+' : ''}{toNumber(mod.weight)} | {tWeaponsAndArmorScreen('modals.cost')}: +{toNumber(mod.cost)}
+                        </Text>
+                      </TouchableOpacity>
+                      {showCreate && (
+                        <View>
+                          <Text style={styles.modificationRequirements}>
+                            {`${tWeaponsAndArmorScreen('modals.requirements')}: ${hint.requirements}`}
+                          </Text>
+                          <View style={styles.requirementsRow}>
+                            <Text style={styles.requirementsMaterials}>{hint.materialsLine}</Text>
+                            <TouchableOpacity
+                              style={[styles.createButton, !hint.enabled && styles.createButtonDimmed]}
+                              disabled={!hint.enabled}
+                              onPress={() => handleCreateMod(mod.id, getModDisplayName(mod, weapon?.baseWeaponName ?? weapon?.name) || mod.name)}
+                            >
+                              <Text style={styles.createButtonText}>{tWeaponsAndArmorScreen('modals.create')}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                    );
+                  })}
+                </CollapsibleSection>
+                );
+              })}
+            </View>
+
+            {/* Предварительный просмотр */}
+            {Object.keys(selectedModifications).length > 0 && (
+              <View style={styles.previewSection}>
+                <Text style={styles.sectionTitle}>{tWeaponsAndArmorScreen('modals.previewLabel')}</Text>
+                <View style={styles.previewContent}>
+                  <Text style={styles.previewTitle}>
+                    {modifiedWeapon?.name || tWeaponsAndArmorScreen('common.empty')}
+                  </Text>
+                  <Text style={styles.previewStats}>
+                    {tWeaponsAndArmorScreen('modals.weaponDamage')}: {modifiedWeapon.damage} | {tWeaponsAndArmorScreen('modals.weaponFireRate')}: {modifiedWeapon.fireRate} |
+                    {tWeaponsAndArmorScreen('modals.weaponRange')}: {modifiedWeapon.range_name || tWeaponsAndArmorScreen('weapon.rangeDefault')} | {tWeaponsAndArmorScreen('modals.weaponWeight')}: {modifiedWeapon.weight} | {tWeaponsAndArmorScreen('modals.weaponCost')}: {modifiedWeapon.cost}
+                  </Text>
+                  <Text style={styles.previewEffects}>
+                    {tWeaponsAndArmorScreen('modals.previewEffects')}: {resolveWeaponEffects(modifiedWeapon.effects)}
+                  </Text>
+                  <Text style={styles.previewQualities}>
+                    {tWeaponsAndArmorScreen('modals.previewQualities')}: {resolveWeaponQualities(modifiedWeapon.qualities)}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Кнопки действий */}
+          <View style={styles.modalFooter}>
+            <TouchableOpacity onPress={handleClose} style={styles.cancelButton}>
+              <Text style={styles.cancelButtonText}>{tWeaponsAndArmorScreen('modals.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleApplyModification}
+              style={styles.applyButton}
+            >
+              <Text style={styles.applyButtonText}>{tWeaponsAndArmorScreen('modals.apply')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* 357: отчёт о крафте — тот же, что в окне крафта (352 давал только
+          короткий Alert: «Проверка навыка не пройдена» без кубиков и без
+          судьбы материалов). */}
+      <Modal visible={!!craftReport} transparent animationType="fade" onRequestClose={finishCraftReport}>
+        <View style={styles.reportOverlay}>
+          <View style={styles.reportDialog}>
+            <Text style={styles.reportTitle}>{craftReport?.title ?? ''}</Text>
+            <CraftReportView
+              report={craftReport}
+              settledTime={settledTime}
+              onSettleTime={settleCraftTimeDecision}
+              onDone={finishCraftReport}
+            />
+          </View>
+        </View>
+      </Modal>
+    </Modal>
+  );
+};
+
+export default WeaponModificationModal; 

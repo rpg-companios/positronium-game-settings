@@ -1,0 +1,717 @@
+{
+  "humanoid": {
+    "slots": [
+      {
+        "id": "head",
+        "accepts": [
+          "head"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "torso",
+        "accepts": [
+          "body"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "leftArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "rightArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "leftLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "rightLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      }
+    ],
+    "defaults": {
+      "head": null,
+      "torso": null,
+      "leftArm": null,
+      "rightArm": null,
+      "leftLeg": null,
+      "rightLeg": null
+    },
+    "hitTable": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "slotId": "head"
+      },
+      {
+        "range": [
+          3,
+          8
+        ],
+        "slotId": "torso"
+      },
+      {
+        "range": [
+          9,
+          11
+        ],
+        "slotId": "leftArm"
+      },
+      {
+        "range": [
+          12,
+          14
+        ],
+        "slotId": "rightArm"
+      },
+      {
+        "range": [
+          15,
+          17
+        ],
+        "slotId": "leftLeg"
+      },
+      {
+        "range": [
+          18,
+          20
+        ],
+        "slotId": "rightLeg"
+      }
+    ]
+  },
+  "robobrain": {
+    "slots": [
+      {
+        "id": "leftArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "head",
+        "accepts": [
+          "head"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "rightArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "body",
+        "accepts": [
+          "body"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "chassis",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      }
+    ],
+    "defaults": {
+      "head": "robot_head_robobrain",
+      "body": "robot_body_robobrain",
+      "leftArm": "robot_arm_robobrain",
+      "rightArm": "robot_arm_robobrain",
+      "chassis": "robot_legs_robobrain_treads"
+    },
+    "defaultPlating": {},
+    "hitTable": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "slotId": "head"
+      },
+      {
+        "range": [
+          3,
+          8
+        ],
+        "slotId": "body"
+      },
+      {
+        "range": [
+          9,
+          11
+        ],
+        "slotId": "leftArm"
+      },
+      {
+        "range": [
+          12,
+          14
+        ],
+        "slotId": "rightArm"
+      },
+      {
+        "range": [
+          15,
+          20
+        ],
+        "slotId": "chassis"
+      }
+    ]
+  },
+  "misterHandy": {
+    "slots": [
+      {
+        "id": "head",
+        "accepts": [
+          "head"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "body",
+        "accepts": [
+          "body"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "arm1",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "arm2",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "arm3",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "thruster",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      }
+    ],
+    "defaults": {
+      "head": "robot_head_mister_handy_eye_stalk",
+      "body": "robot_body_mister_handy",
+      "arm1": "robot_arm_mister_handy",
+      "arm2": "robot_arm_mister_handy",
+      "arm3": "robot_arm_mister_handy",
+      "thruster": "robot_legs_mister_handy_thruster"
+    },
+    "defaultPlating": {},
+    "hitTable": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "slotId": "head"
+      },
+      {
+        "range": [
+          3,
+          4
+        ],
+        "slotId": "body"
+      },
+      {
+        "range": [
+          5,
+          8
+        ],
+        "slotId": "arm1"
+      },
+      {
+        "range": [
+          9,
+          12
+        ],
+        "slotId": "arm2"
+      },
+      {
+        "range": [
+          13,
+          16
+        ],
+        "slotId": "arm3"
+      },
+      {
+        "range": [
+          17,
+          20
+        ],
+        "slotId": "thruster"
+      }
+    ]
+  },
+  "protectron": {
+    "slots": [
+      {
+        "id": "leftArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "head",
+        "accepts": [
+          "head"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "rightArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "leftLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "body",
+        "accepts": [
+          "body"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "rightLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      }
+    ],
+    "defaults": {
+      "leftArm": "robot_arm_protectron",
+      "head": "robot_head_protectron",
+      "rightArm": "robot_arm_protectron",
+      "leftLeg": "robot_legs_protectron",
+      "body": "robot_body_protectron",
+      "rightLeg": "robot_legs_protectron"
+    },
+    "defaultPlating": {},
+    "hitTable": [
+      {
+        "range": [
+          1,
+          3
+        ],
+        "slotId": "head"
+      },
+      {
+        "range": [
+          4,
+          7
+        ],
+        "slotId": "leftArm"
+      },
+      {
+        "range": [
+          8,
+          11
+        ],
+        "slotId": "rightArm"
+      },
+      {
+        "range": [
+          12,
+          15
+        ],
+        "slotId": "body"
+      },
+      {
+        "range": [
+          16,
+          18
+        ],
+        "slotId": "leftLeg"
+      },
+      {
+        "range": [
+          19,
+          20
+        ],
+        "slotId": "rightLeg"
+      }
+    ]
+  },
+  "securitron": {
+    "slots": [
+      {
+        "id": "head",
+        "accepts": [
+          "head"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "leftArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "body",
+        "accepts": [
+          "body"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "rightArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "wheel",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      }
+    ],
+    "defaults": {
+      "head": "robot_head_securitron",
+      "body": "robot_body_securitron",
+      "leftArm": "robot_arm_securitron",
+      "rightArm": "robot_arm_securitron",
+      "wheel": "robot_legs_securitron"
+    },
+    "defaultPlating": {},
+    "layout": [
+      [
+        "head"
+      ],
+      [
+        "leftArm",
+        "body",
+        "rightArm"
+      ],
+      [
+        "wheel"
+      ]
+    ],
+    "hitTable": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "slotId": "head"
+      },
+      {
+        "range": [
+          3,
+          11
+        ],
+        "slotId": "body"
+      },
+      {
+        "range": [
+          12,
+          14
+        ],
+        "slotId": "leftArm"
+      },
+      {
+        "range": [
+          15,
+          17
+        ],
+        "slotId": "rightArm"
+      },
+      {
+        "range": [
+          18,
+          20
+        ],
+        "slotId": "wheel"
+      }
+    ]
+  },
+  "assaultron": {
+    "slots": [
+      {
+        "id": "leftArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "head",
+        "accepts": [
+          "head"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "rightArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "leftLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "body",
+        "accepts": [
+          "body"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "rightLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      }
+    ],
+    "defaults": {
+      "leftArm": "robot_arm_assaultron",
+      "head": "robot_head_assaultron_laser",
+      "rightArm": "robot_arm_assaultron",
+      "leftLeg": "robot_legs_assaultron",
+      "body": "robot_body_assaultron",
+      "rightLeg": "robot_legs_assaultron"
+    },
+    "defaultPlating": {},
+    "hitTable": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "slotId": "head"
+      },
+      {
+        "range": [
+          3,
+          8
+        ],
+        "slotId": "body"
+      },
+      {
+        "range": [
+          9,
+          11
+        ],
+        "slotId": "leftArm"
+      },
+      {
+        "range": [
+          12,
+          14
+        ],
+        "slotId": "rightArm"
+      },
+      {
+        "range": [
+          15,
+          17
+        ],
+        "slotId": "leftLeg"
+      },
+      {
+        "range": [
+          18,
+          20
+        ],
+        "slotId": "rightLeg"
+      }
+    ]
+  },
+  "sentryBot": {
+    "slots": [
+      {
+        "id": "leftArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "head",
+        "accepts": [
+          "head"
+        ],
+        "capacity": 1,
+        "swappable": false
+      },
+      {
+        "id": "rightArm",
+        "accepts": [
+          "arm"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "leftLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "body",
+        "accepts": [
+          "body"
+        ],
+        "capacity": 1,
+        "swappable": true
+      },
+      {
+        "id": "rightLeg",
+        "accepts": [
+          "mover"
+        ],
+        "capacity": 1,
+        "swappable": true
+      }
+    ],
+    "defaults": {
+      "leftArm": "robot_arm_sentry_bot",
+      "head": "robot_head_sentry_bot",
+      "rightArm": "robot_arm_sentry_bot",
+      "leftLeg": "robot_legs_sentry_bot",
+      "body": "robot_body_sentry_bot",
+      "rightLeg": "robot_legs_sentry_bot"
+    },
+    "defaultPlating": {},
+    "hitTable": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "slotId": "head"
+      },
+      {
+        "range": [
+          3,
+          8
+        ],
+        "slotId": "body"
+      },
+      {
+        "range": [
+          9,
+          11
+        ],
+        "slotId": "leftArm"
+      },
+      {
+        "range": [
+          12,
+          14
+        ],
+        "slotId": "rightArm"
+      },
+      {
+        "range": [
+          15,
+          17
+        ],
+        "slotId": "leftLeg"
+      },
+      {
+        "range": [
+          18,
+          20
+        ],
+        "slotId": "rightLeg"
+      }
+    ]
+  }
+}

@@ -1,0 +1,412 @@
+{
+  "plating": [
+    {
+      "id": "robot_plating_standard_optics",
+      "templateId": "robot_plating_standard",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": 0,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "head"
+    },
+    {
+      "id": "robot_plating_standard_body",
+      "templateId": "robot_plating_standard",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": 0,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "body"
+    },
+    {
+      "id": "robot_plating_standard_arms",
+      "templateId": "robot_plating_standard",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": 0,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "arm"
+    },
+    {
+      "id": "robot_plating_standard_thruster",
+      "templateId": "robot_plating_standard",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": 0,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "mover"
+    },
+    {
+      "id": "robot_plating_gutsy_optics",
+      "templateId": "robot_plating_mister_gutsy",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 2
+      },
+      "carryWeightModifier": -10,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "head"
+    },
+    {
+      "id": "robot_plating_gutsy_body",
+      "templateId": "robot_plating_mister_gutsy",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 2
+      },
+      "carryWeightModifier": -10,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "body"
+    },
+    {
+      "id": "robot_plating_gutsy_arms",
+      "templateId": "robot_plating_mister_gutsy",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 2
+      },
+      "carryWeightModifier": -10,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "arm"
+    },
+    {
+      "id": "robot_plating_gutsy_thruster",
+      "templateId": "robot_plating_mister_gutsy",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 2
+      },
+      "carryWeightModifier": -10,
+      "cost": 0,
+      "perkRequired": null,
+      "limbType": "mover"
+    },
+    {
+      "id": "robot_plating_primal_optics",
+      "templateId": "robot_plating_primal",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 10,
+      "perkRequired": null,
+      "limbType": "head"
+    },
+    {
+      "id": "robot_plating_primal_body",
+      "templateId": "robot_plating_primal",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -20,
+      "cost": 20,
+      "perkRequired": null,
+      "limbType": "body"
+    },
+    {
+      "id": "robot_plating_primal_arms",
+      "templateId": "robot_plating_primal",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 10,
+      "perkRequired": null,
+      "limbType": "arm"
+    },
+    {
+      "id": "robot_plating_primal_thruster",
+      "templateId": "robot_plating_primal",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 10,
+      "perkRequired": null,
+      "limbType": "mover"
+    },
+    {
+      "id": "robot_plating_serrated_optics",
+      "templateId": "robot_plating_serrated",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 1",
+      "limbType": "head"
+    },
+    {
+      "id": "robot_plating_serrated_body",
+      "templateId": "robot_plating_serrated",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -20,
+      "cost": 30,
+      "perkRequired": "Armorer 1",
+      "limbType": "body"
+    },
+    {
+      "id": "robot_plating_serrated_arms",
+      "templateId": "robot_plating_serrated",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 1",
+      "limbType": "arm"
+    },
+    {
+      "id": "robot_plating_serrated_thruster",
+      "templateId": "robot_plating_serrated",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 1",
+      "limbType": "mover"
+    },
+    {
+      "id": "robot_plating_noxious_optics",
+      "templateId": "robot_plating_noxious",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 1",
+      "limbType": "head"
+    },
+    {
+      "id": "robot_plating_noxious_body",
+      "templateId": "robot_plating_noxious",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -20,
+      "cost": 30,
+      "perkRequired": "Armorer 1",
+      "limbType": "body"
+    },
+    {
+      "id": "robot_plating_noxious_arms",
+      "templateId": "robot_plating_noxious",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 1",
+      "limbType": "arm"
+    },
+    {
+      "id": "robot_plating_noxious_thruster",
+      "templateId": "robot_plating_noxious",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 1",
+      "limbType": "mover"
+    },
+    {
+      "id": "robot_plating_toxic_optics",
+      "templateId": "robot_plating_toxic",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 3",
+      "limbType": "head"
+    },
+    {
+      "id": "robot_plating_toxic_body",
+      "templateId": "robot_plating_toxic",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -20,
+      "cost": 30,
+      "perkRequired": "Armorer 3",
+      "limbType": "body"
+    },
+    {
+      "id": "robot_plating_toxic_arms",
+      "templateId": "robot_plating_toxic",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 3",
+      "limbType": "arm"
+    },
+    {
+      "id": "robot_plating_toxic_thruster",
+      "templateId": "robot_plating_toxic",
+      "layer": "plating",
+      "incompatibleLayers": [
+        "armor",
+        "frame"
+      ],
+      "damageResistance": {
+        "physical": 2,
+        "energy": 0
+      },
+      "carryWeightModifier": -10,
+      "cost": 15,
+      "perkRequired": "Armorer 3",
+      "limbType": "mover"
+    }
+  ]
+}

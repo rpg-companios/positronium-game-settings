@@ -1,0 +1,10 @@
+{
+  "titleAdd": "Внести крышки",
+  "titleSubtract": "Списать крышки",
+  "inputPlaceholder": "Введите сумму",
+  "save": "Сохранить",
+  "cancel": "Отмена",
+  "invalidAmount": "Пожалуйста, введите корректное число больше нуля.",
+  "notEnoughCapsTitle": "Недостаточно крышек",
+  "notEnoughCapsMessage": "Нельзя списать {amount}: доступно только {caps}."
+}

@@ -1,0 +1,228 @@
+[
+  {
+    "id": "weapon_baseball_grenade",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_frag_grenade",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 2
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_molotov",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 4
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 3
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 2
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_plasma_grenade",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        },
+        {
+          "perkId": "science",
+          "rank": 3
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_rare_materials",
+        "count": 2
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_pulse_grenade",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        },
+        {
+          "perkId": "science",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_rare_materials",
+        "count": 2
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_bottlecap_mine",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 4
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 1
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_frag_mine",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_common_materials",
+        "count": 2
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_plasma_mine",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        },
+        {
+          "perkId": "science",
+          "rank": 3
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_rare_materials",
+        "count": 2
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  },
+  {
+    "id": "weapon_pulse_mine",
+    "requires": {
+      "skill": "EXPLOSIVES",
+      "complexity": 5,
+      "perks": [
+        {
+          "perkId": "demolitionExpert",
+          "rank": 1
+        },
+        {
+          "perkId": "science",
+          "rank": 2
+        }
+      ]
+    },
+    "materials": [
+      {
+        "itemId": "item_rare_materials",
+        "count": 2
+      },
+      {
+        "itemId": "item_uncommon_materials",
+        "count": 3
+      }
+    ],
+    "outputQuantity": 1
+  }
+]

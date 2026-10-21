@@ -1,0 +1,40 @@
+{
+  "id": "crafting",
+  "recipes": [
+    {
+      "file": "ammo.json",
+      "category": "ammo",
+      "count": 28
+    },
+    {
+      "file": "armor.json",
+      "category": "armor",
+      "count": 44
+    },
+    {
+      "file": "chems.json",
+      "category": "chems",
+      "count": 21
+    },
+    {
+      "file": "drinks.json",
+      "category": "drinks",
+      "count": 8
+    },
+    {
+      "file": "explosives.json",
+      "category": "explosives",
+      "count": 9
+    },
+    {
+      "file": "food.json",
+      "category": "food",
+      "count": 27
+    },
+    {
+      "file": "weapons.json",
+      "category": "weapons",
+      "count": 164
+    }
+  ]
+}
