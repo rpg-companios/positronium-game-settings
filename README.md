@@ -5,23 +5,29 @@
 - `fallout/` — кошелёк сеттинга (собран из `modules/fallout`)
 
 Каждый кошелёк содержит `manifest.json`, `runtimeEntry.js`, данные, переводы и экраны.
+
+Заметки о релизах — `release-notes/<id>.md`: верхняя секция приезжает в текст
+GitHub Release вместе с новой версией пакета.
+
+Сборщик живёт в репозитории: `npm install --prefix tools` ставит esbuild
+в `tools/node_modules`. Checkout движка не нужен — кошелёк обращается к
+движку только через `engine:<id>`, эти модули отдаёт хост приложения.
+Список доступных модулей — `tools/host-modules.json` (обновляет публикация).
 Готовый пакет для игрока — файл `.trpg`, он публикуется в релизах этого репозитория (см. `release.json`).
 
 ## Сборка пакета
 
-В репозитории сеттинга нет исходников движка, поэтому упаковщику нужно
-указать его checkout:
+Движок для сборки не нужен:
 
 ```sh
-git clone https://github.com/rpg-companios/ttrpg-engine ../ttrpg-engine
-POSITRONIUM_ENGINE=../ttrpg-engine python3 tools/pack-setting.py fallout -o dist/fallout.trpg
+npm install --prefix tools
+python3 tools/pack-setting.py fallout -o dist/fallout.trpg
 ```
 
-Без `POSITRONIUM_ENGINE` (или `--engine <path>`) упаковщик остановится с
-понятной ошибкой, а не соберёт пакет без runtime-бандла.
-
-Runtime-бандл собирает esbuild, поэтому в checkout движка должны быть
-установлены зависимости: npm install (достаточно npm install esbuild).
+Импорты `engine:<id>` остаются в бандле внешними; приложение отдаёт их
+из `src/engine/settings/settingRuntimeHost.js` во время работы. Если
+кошелёк запросит модуль, которого хост не объявляет, сборка остановится
+с ошибкой и списком недостающих id.
 
 ## Лицензия
 

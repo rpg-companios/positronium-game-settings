@@ -1,0 +1,11 @@
+{
+  "name": "positronium-setting-tools",
+  "private": true,
+  "description": "Сборщик пакетов .trpg (checkout движка не требуется)",
+  "scripts": {
+    "build": "python3 pack-setting.py fallout -o dist/fallout.trpg"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
