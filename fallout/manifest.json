@@ -1,7 +1,7 @@
 {
   "id": "fallout",
   "name": "Fallout 2d20",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "requiresCore": ">=1.0",
   "compatibility": {
     "minimum": "1.0.1"
