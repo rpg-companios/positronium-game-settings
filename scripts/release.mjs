@@ -6,6 +6,7 @@
 //
 //   движок  (app.json + release-notes/engine.md)
 //     npm run release                  # APK → GitHub Release → app-release.json
+//     npm run release:test             # тестовый APK: prerelease, канал preview
 //     npm run release -- --aab         # AAB (файл для Google Play) в релиз
 //     npm run release -- --aab --submit  # плюс загрузка AAB в Play Console
 //
@@ -40,7 +41,7 @@ import {
   ENGINE_APK_ASSET,
   ENGINE_RELEASE_NOTES,
   buildAppReleaseIndex,
-  engineReleaseTag,
+  planEngineRelease,
   readEngineVersion,
   renderAppReleaseIndex,
   renderReleaseBody,
@@ -104,6 +105,7 @@ const baseArgs = (argv) => {
     bump: 'patch',
     version: null,
     setting: null,
+    prerelease: false,
   };
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -132,6 +134,9 @@ const baseArgs = (argv) => {
       case '--setting':
         args.setting = argv[++index];
         if (!args.setting) fail('--setting требует id сеттинга');
+        break;
+      case '--prerelease':
+        args.prerelease = true;
         break;
       case '-h':
       case '--help':
@@ -163,10 +168,30 @@ const token = () => (
   process.env.PUBLISH_GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_TOKEN || ''
 );
 
+/** Авторизация до сборки: без неё 20 МБ .trpg собирались бы зря. */
+const assertReleaseAuth = () => {
+  if (token()) return;
+  if (!hasCommand('gh')) {
+    fail('для релиза нужен токен GH_TOKEN / PUBLISH_GITHUB_TOKEN или gh CLI');
+  }
+  try {
+    execFileSync('gh', ['auth', 'status'], { stdio: 'ignore' });
+  } catch {
+    fail(
+      'gh установлен, но не авторизован: выполните gh auth login '
+      + 'или задайте токен GH_TOKEN / PUBLISH_GITHUB_TOKEN',
+    );
+  }
+};
+
 /** GitHub Release: gh CLI, а без него — REST по токену. */
-const createRelease = async ({ repository, tag, title, body, file, assetName }) => {
+const createRelease = async ({ repository, tag, title, body, file, assetName, prerelease = false }) => {
   const branch = currentBranch();
-  if (hasCommand('gh')) {
+  const key = token();
+  // Токен важнее gh CLI: gh может быть установлен, но не авторизован (или
+  // авторизован другим аккаунтом без прав), а PUBLISH_GITHUB_TOKEN он не
+  // читает. С токеном идём по REST — одинаково на любой машине.
+  if (!key && hasCommand('gh')) {
     let exists = true;
     try {
       execFileSync('gh', ['release', 'view', tag, '--repo', repository], { stdio: 'ignore' });
@@ -193,12 +218,15 @@ const createRelease = async ({ repository, tag, title, body, file, assetName }) 
       '--target', branch,
       '--title', title,
       '--notes-file', notesFile,
+      // prerelease не становится «Latest»: постоянная ссылка
+      // /releases/latest/download/positronium.apk продолжает отдавать
+      // публичный APK, а не тестовый.
+      ...(prerelease ? ['--prerelease'] : []),
     ], { stdio: 'inherit' });
     fs.rmSync(notesFile, { force: true });
     return;
   }
 
-  const key = token();
   if (!key) fail('для релиза нужен gh CLI или токен GH_TOKEN / PUBLISH_GITHUB_TOKEN');
 
   const headers = {
@@ -210,7 +238,13 @@ const createRelease = async ({ repository, tag, title, body, file, assetName }) 
   const created = await fetch(`${API_BASE}/repos/${repository}/releases`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tag_name: tag, name: title, body, target_commitish: branch }),
+    body: JSON.stringify({
+      tag_name: tag,
+      name: title,
+      body,
+      target_commitish: branch,
+      prerelease: Boolean(prerelease),
+    }),
   });
   let release = null;
   if (created.ok) {
@@ -251,6 +285,28 @@ const createRelease = async ({ repository, tag, title, body, file, assetName }) 
   }
 };
 
+/**
+ * Push ветки. С токеном передаём его заголовком, а не в URL: он не попадает
+ * в .git/config и работает там, где git-креды не настроены (Replit Shell с
+ * одним лишь PUBLISH_GITHUB_TOKEN). Без токена — обычный push (gh/креды).
+ */
+const pushHead = (branch) => {
+  const key = token();
+  if (!key) {
+    run('git', ['push', 'origin', `HEAD:${branch}`]);
+    return;
+  }
+  const basic = Buffer.from(`x-access-token:${key}`).toString('base64');
+  run('git', ['push', 'origin', `HEAD:${branch}`], {
+    env: {
+      ...process.env,
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+      GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+    },
+  });
+};
+
 /** Закоммитить и запушить изменённые файлы релиза. */
 const commitRelease = ({ files, message }) => {
   const status = run('git', ['status', '--porcelain', '--', ...files]).trim();
@@ -266,7 +322,7 @@ const commitRelease = ({ files, message }) => {
     '-c', `user.email=${process.env.PUBLISH_GIT_EMAIL || 'release@positronium.local'}`,
     'commit', '-m', message,
   ]);
-  run('git', ['push', 'origin', `HEAD:${currentBranch()}`]);
+  pushHead(currentBranch());
   console.log('[release] изменения закоммичены и отправлены');
   return true;
 };
@@ -286,31 +342,227 @@ const parseJson = (text, what) => {
   }
 };
 
-const eas = (args) => run('npx', ['eas-cli', ...args]);
+/**
+ * Кэш Expo CLI (React Native DevTools через dotslash) в корне проекта.
+ *
+ * Внутри бывают каталоги без права записи, а EAS Build копирует рабочее
+ * дерево во временный клон и потом не может его удалить:
+ * «EACCES: permission denied, rmdir .../.cache/dotslash/...». Кэш не нужен ни
+ * сборке, ни приложению — убираем его перед упаковкой.
+ */
+const clearExpoCache = () => {
+  const cache = path.join(ROOT, '.cache');
+  if (!fs.existsSync(cache)) return;
+  const relax = (target) => {
+    const stat = fs.lstatSync(target);
+    if (stat.isSymbolicLink()) return;
+    fs.chmodSync(target, stat.isDirectory() ? 0o755 : 0o644);
+    if (stat.isDirectory()) {
+      for (const entry of fs.readdirSync(target)) relax(path.join(target, entry));
+    }
+  };
+  try {
+    relax(cache);
+    fs.rmSync(cache, { recursive: true, force: true });
+    console.log('[release] убран кэш .cache (мешал упаковке EAS)');
+  } catch (error) {
+    console.warn(
+      `[release] не удалось убрать .cache: ${error?.message ?? error}. `
+      + 'Если сборка упадёт на упаковке — удалите каталог вручную.',
+    );
+  }
+};
 
-const resolveBuild = ({ args, profile }) => {
-  if (args.buildId) return parseJson(eas(['build:view', args.buildId, '--json']), 'build:view');
+/**
+ * Зависимости приложения перед EAS-сборкой.
+ *
+ * EAS перед отправкой в облако собирает архив проекта локально и читает
+ * плагины Expo из node_modules. Свежий клон (или дерево после `git clean -fd`)
+ * их не имеет, и сборка падает на «Failed to resolve plugin for module
+ * "expo-asset"». node_modules в git не лежит — ставим сами.
+ */
+const ensureEngineDependencies = () => {
+  const installed = path.join(ROOT, 'node_modules', 'expo-asset');
+  if (fs.existsSync(installed)) return;
+  if (!hasCommand('npm')) fail('для сборки APK нужен npm: поставьте node 18+ и npm');
+  const lock = path.join(ROOT, 'package-lock.json');
+  const command = fs.existsSync(lock) ? 'ci' : 'install';
+  console.log(`[release] нет node_modules — ставлю зависимости (npm ${command})`);
+  try {
+    execFileSync('npm', [command, '--no-audit', '--no-fund'], { cwd: ROOT, stdio: 'inherit' });
+  } catch {
+    fail(`не удалось поставить зависимости: выполните "npm ${command}" вручную`);
+  }
+  if (!fs.existsSync(installed)) {
+    fail('после npm ' + command + ' в node_modules нет expo-asset: проверьте package.json');
+  }
+};
+
+/**
+ * projectId Expo из app.json: ошибка доступа к чужому проекту иначе выглядит
+ * как загадочное «Entity Not Authorized».
+ */
+const easProjectId = () => {
+  try {
+    const app = JSON.parse(fs.readFileSync(path.join(ROOT, 'app.json'), 'utf8'));
+    return app?.expo?.extra?.eas?.projectId ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/** Аккаунт, под которым работает EAS (`handylinux (…)`); null — не узнать. */
+const easAccount = () => {
+  try {
+    const out = execFileSync('npx', ['eas-cli', 'whoami'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const line = (out ?? '').trim().split('\n')[0].trim();
+    // whoami печатает «handylinux (authenticated using EXPO_TOKEN)».
+    return line ? (line.split(/\s+/)[0] || null) : null;
+  } catch {
+    return null;
+  }
+};
+
+const easAuthHint = () => {
+  const projectId = easProjectId();
+  const account = easAccount();
+  return [
+    '',
+    `  Проект Expo ${projectId ?? '(нет projectId в app.json)'} этому аккаунту недоступен`
+      + `${account ? ` (вход выполнен: ${account})` : ''}.`,
+    '  Варианты:',
+    '    • войти аккаунтом-владельцем проекта — EXPO_TOKEN в Replit → Tools → Secrets,',
+    '    • перенести проект на свой аккаунт: expo.dev → проект → Project settings → Transfer,',
+    '    • создать новый проект: npx eas-cli init (запишет projectId и updates.url в app.json).',
+    '  app.json приезжает в репозиторий движка публикацией: правку projectId',
+    '  нужно делать в смешанном репозитории (app.json там) и потом публиковать,',
+    '  иначе следующий publish вернёт старое значение.',
+  ].join('\n');
+};
+
+/** EAS; сетевые ошибки и отказ доступа дополняются подсказкой. */
+const eas = (args) => {
+  try {
+    return execFileSync('npx', ['eas-cli', ...args], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: process.env,
+    });
+  } catch (error) {
+    const output = `${error?.stderr ?? ''}\n${error?.stdout ?? ''}`
+      .split('\n')
+      .filter((line) => !/deprecated|is deprecated/i.test(line))
+      .join('\n')
+      .trim();
+    const hint = /not authorized|Entity Not Authorized|incorrect user/i.test(output)
+      ? easAuthHint()
+      : '';
+    fail(`npx eas-cli ${args.join(' ')} не удался\n${output}${hint}`);
+    return '';
+  }
+};
+
+const expoSlug = () => {
+  try {
+    const app = JSON.parse(fs.readFileSync(path.join(ROOT, 'app.json'), 'utf8'));
+    return app?.expo?.slug ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/** Страница сборки на expo.dev — чтобы было видно прогресс без терминала. */
+const buildPageUrl = (buildId) => {
+  const owner = easAccount();
+  const project = expoSlug();
+  if (!buildId || !owner || !project) return null;
+  return `https://expo.dev/accounts/${owner}/projects/${project}/builds/${buildId}`;
+};
+
+const BUILD_TIMEOUT_MS = Number(process.env.RELEASE_BUILD_TIMEOUT_MS) || 90 * 60 * 1000;
+const BUILD_POLL_MS = Number(process.env.RELEASE_BUILD_POLL_MS) || 30_000;
+const FINISHED = 'finished';
+const FAILED_STATUSES = ['errored', 'canceled', 'cancelled', 'expired'];
+
+const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+const viewBuild = (buildId) => {
+  const builds = parseJson(eas(['build:view', buildId, '--json']), 'build:view');
+  return Array.isArray(builds) ? builds[0] : builds;
+};
+
+/**
+ * Дождаться сборки, печатая её состояние.
+ *
+ * `eas build --wait` молчит все 20–30 минут: непонятно, идёт сборка или
+ * висит очередь. Поэтому сборка запускается без --wait, сразу печатается
+ * ссылка на expo.dev, а дальше статус опрашивается с отметкой времени.
+ */
+const waitForBuild = async ({ buildId, pageUrl }) => {
+  const startedAt = Date.now();
+  const elapsed = () => `${Math.round((Date.now() - startedAt) / 60_000)} мин`;
+  let build = viewBuild(buildId);
+  let lastStatus = null;
+  for (;;) {
+    const status = String(build?.status ?? 'unknown').toLowerCase();
+    if (status !== lastStatus) {
+      const line = `[release] сборка ${buildId}: ${status} (${elapsed()})`;
+      console.log(status === 'in queue' ? `${line} — ждёт свободный слот Expo` : line);
+      lastStatus = status;
+    }
+    if (status === FINISHED) return build;
+    if (FAILED_STATUSES.includes(status)) {
+      fail(
+        `сборка ${buildId} завершилась со статусом ${status}`
+        + `${pageUrl ? `\n  лог: ${pageUrl}` : ''}`
+        + `${build?.error?.message ? `\n  ошибка: ${build.error.message}` : ''}`,
+      );
+    }
+    if (Date.now() - startedAt > BUILD_TIMEOUT_MS) {
+      fail(
+        `сборка ${buildId} не завершилась за ${Math.max(1, Math.round(BUILD_TIMEOUT_MS / 60_000))} мин. `
+        + 'Она продолжается на серверах EAS: когда закончится, опубликуйте её без новой сборки — '
+        + `./scripts/release.sh --build-id ${buildId}`,
+      );
+    }
+    await sleep(BUILD_POLL_MS);
+    build = viewBuild(buildId);
+  }
+};
+
+const resolveBuild = async ({ args, profile }) => {
+  if (args.buildId) {
+    console.log(`[release] сборка ${args.buildId}: беру готовый билд`);
+    return waitForBuild({ buildId: args.buildId, pageUrl: buildPageUrl(args.buildId) });
+  }
   if (args.skipBuild) {
     const list = parseJson(
       eas(['build:list', '--platform', 'android', '--status', 'finished', '--build-profile', profile, '--limit', '1', '--json']),
       'build:list',
     );
-    const build = Array.isArray(list) ? list[0] : null;
-    if (!build) fail(`нет успешных сборок профиля ${profile}; уберите --skip-build`);
-    return build;
+    const entry = Array.isArray(list) ? list[0] : null;
+    if (!entry) fail(`нет успешных сборок профиля ${profile}; уберите --skip-build`);
+    console.log(`[release] беру последнюю успешную сборку ${entry.id}`);
+    return viewBuild(entry.id);
   }
 
-  console.log(`[release] EAS build: профиль ${profile} (это займёт несколько минут)`);
+  console.log(`[release] EAS build: профиль ${profile} (запуск, ~1–2 мин на загрузку проекта)`);
   const builds = parseJson(
-    eas(['build', '--platform', 'android', '--profile', profile, '--non-interactive', '--wait', '--json']),
+    eas(['build', '--platform', 'android', '--profile', profile, '--non-interactive', '--json']),
     'build',
   );
-  const build = Array.isArray(builds) ? builds[0] : builds;
-  if (!build) fail('EAS не вернул сборку');
-  if (String(build.status).toLowerCase() !== 'finished') {
-    fail(`сборка ${build.id} завершилась со статусом ${build.status}; лог: ${build.logsUrl ?? 'см. expo.dev'}`);
-  }
-  return build;
+  const started = Array.isArray(builds) ? builds[0] : builds;
+  if (!started?.id) fail('EAS не вернул сборку');
+  const pageUrl = buildPageUrl(started.id);
+  console.log(`[release] сборка ${started.id} поставлена в очередь`);
+  if (pageUrl) console.log(`[release] смотреть: ${pageUrl}`);
+  console.log('[release] обычная сборка 15–25 мин, первая может дольше; Ctrl+C не отменяет её на сервере');
+  return waitForBuild({ buildId: started.id, pageUrl });
 };
 
 const downloadArtifact = async (build) => {
@@ -340,24 +592,38 @@ const releaseEngine = async ({ args, repository }) => {
     );
   }
 
-  const tag = engineReleaseTag(version);
-  const title = `Positronium ${version}`;
+  // Тестовый релиз — та же версия, но отдельный тег и отдельный профиль:
+  // тег не должен занять `engine-v1.0.1`, а APK должен слушать канал preview.
+  // APK для людей собирается профилем `public`: он слушает канал production.
+  const { tag, title, profile, asset: assetName, writeIndex } = planEngineRelease({
+    version,
+    prerelease: args.prerelease,
+    aab: args.aab,
+  });
   const body = renderReleaseBody(notes);
-  const profile = args.aab ? 'production' : 'preview';
-  const assetName = args.aab ? ENGINE_AAB_ASSET : ENGINE_APK_ASSET;
 
   console.log(`[release] движок ${repository} · ${tag} · ${assetName} · профиль ${profile}`);
+  if (args.prerelease) {
+    console.log('[release] тестовый релиз: помечен prerelease, версия Latest и app-release.json не меняются');
+  }
   if (args.dryRun) {
     console.log(`[release] dry-run: собрали бы профиль ${profile} и опубликовали ${tag}`);
     return;
   }
 
-  const build = resolveBuild({ args, profile });
+  ensureEngineDependencies();
+  clearExpoCache();
+  const account = easAccount();
+  if (account) console.log(`[release] EAS: ${account}`);
+  const build = await resolveBuild({ args, profile });
   console.log(`[release] сборка ${build.id}: ${build.status}`);
   const artifact = await downloadArtifact(build);
   console.log(`[release] файл: ${artifact.bytes} байт, sha256 ${artifact.sha256}`);
+  console.log(`[release] скачанный файл: ${artifact.file}`);
 
-  const index = args.aab
+  // Индекс обновлений — только для публичного APK: по нему приложение
+  // предлагает обновиться всем, тестовая сборка туда попадать не должна.
+  const index = !writeIndex
     ? null
     : buildAppReleaseIndex({
       repository,
@@ -368,7 +634,15 @@ const releaseEngine = async ({ args, repository }) => {
       sha256: artifact.sha256,
     });
 
-  await createRelease({ repository, tag, title, body, file: artifact.file, assetName });
+  await createRelease({
+    repository,
+    tag,
+    title,
+    body,
+    file: artifact.file,
+    assetName,
+    prerelease: args.prerelease,
+  });
   console.log(`[release] GitHub Release ${tag}: ${assetName}`);
 
   if (args.aab && args.submit) {
@@ -385,7 +659,10 @@ const releaseEngine = async ({ args, repository }) => {
 
   fs.rmSync(path.dirname(artifact.file), { recursive: true, force: true });
   console.log(`[release] готово: https://github.com/${repository}/releases/tag/${tag}`);
-  if (!args.aab) {
+  if (args.prerelease) {
+    console.log(`[release] тестовый APK: https://github.com/${repository}/releases/download/${tag}/${assetName}`);
+    console.log('[release] постоянная ссылка /releases/latest/ по-прежнему отдаёт публичный APK');
+  } else if (!args.aab) {
     console.log(`[release] постоянная ссылка: https://github.com/${repository}/releases/latest/download/${assetName}`);
   }
 };
@@ -449,7 +726,8 @@ const buildTrpg = ({ setting, output, nodeModules }) => {
  */
 const pruneLegacyReleases = async ({ repository, settingId }) => {
   const removed = [];
-  if (hasCommand('gh')) {
+  const key = token();
+  if (!key && hasCommand('gh')) {
     const list = parseJson(
       run('gh', ['release', 'list', '--repo', repository, '--limit', '100', '--json', 'tagName']),
       'release list',
@@ -462,7 +740,6 @@ const pruneLegacyReleases = async ({ repository, settingId }) => {
     return removed;
   }
 
-  const key = token();
   if (!key) return removed;
   const headers = {
     Authorization: `Bearer ${key}`,
@@ -539,6 +816,7 @@ const releaseSettings = async ({ args, repository }) => {
     const bytes = fs.statSync(file).size;
     const digest = sha256(file);
     console.log(`[release] ${asset}: ${bytes} байт, sha256 ${digest}`);
+    console.log(`[release] файл: ${file} (временный, удалится после релиза)`);
     return { setting, version, notes, asset, file, bytes, sha256: digest };
   });
 
@@ -645,6 +923,7 @@ const main = async () => {
   } else {
     console.log('[release] обновление из origin отключено (--no-pull)');
   }
+  assertReleaseAuth();
   const mode = detectMode();
   if (!mode) {
     fail(
@@ -655,10 +934,16 @@ const main = async () => {
   if (mode === 'setting' && (args.aab || args.submit || args.buildId || args.skipBuild)) {
     fail('--aab/--submit/--build-id/--skip-build относятся к релизу движка');
   }
+  if (mode === 'setting' && args.prerelease) {
+    fail('--prerelease относится к релизу движка: тестовый .trpg ставится ссылкой на ветку preview');
+  }
   if (mode === 'engine' && (args.bump !== 'patch' || args.version || args.setting)) {
     fail('--bump/--version/--setting относятся к релизу сеттинга: версия движка — в app.json');
   }
   if (args.submit && !args.aab) fail('--submit работает только вместе с --aab');
+  if (args.prerelease && args.aab) {
+    fail('--prerelease относится к APK: AAB уходит в Google Play, там тестовых каналов нет');
+  }
   const settings = mode === 'setting' ? listSettings() : [];
   if (args.setting && !settings.some((item) => item.id === args.setting)) {
     fail(`нет сеттинга "${args.setting}" (есть: ${settings.map((item) => item.id).join(', ') || 'ни одного'})`);
